@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f2f2f0">
+<title>WiFi Işık</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f2f0; --kart: #fff; --cizgi: #ececec; --yazi: #161616; --soluk: #8b8b8b;
+    --koyu: #161616; --ok: #2fb35b; --hata: #e0483e;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--yazi); font-family: "Outfit", system-ui, sans-serif; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  button:disabled { cursor: default; }
+  [hidden] { display: none !important; }
+
+  .app { max-width: 420px; margin: 0 auto; min-height: 100vh; padding: 22px 20px 40px; }
+  @media (min-width: 480px) {
+    .app { margin: 28px auto; min-height: 0; background: #fff; border-radius: 36px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.18); padding: 28px 24px 36px; }
+    body { padding-bottom: 28px; }
+  }
+
+  /* ---- üst ---- */
+  .ust { display: flex; justify-content: space-between; align-items: center; }
+  .menu { width: 24px; height: 14px; display: flex; flex-direction: column; justify-content: space-between; }
+  .menu i { display: block; height: 2px; background: var(--yazi); border-radius: 2px; }
+  .menu i:last-child { width: 62%; }
+  .durum { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--soluk); background: var(--bg); padding: 7px 12px; border-radius: 999px; }
+  @media (min-width: 480px) { .durum { background: #f5f5f4; } }
+  .nokta { width: 8px; height: 8px; border-radius: 50%; background: #c9c9c9; }
+  .nokta.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(47,179,91,.18); }
+  .nokta.hata { background: var(--hata); }
+
+  h1 { font-weight: 500; font-size: 30px; margin: 26px 0 4px; letter-spacing: -.3px; }
+  .alt-baslik { margin: 0; color: #444; font-weight: 300; font-size: 16px; }
+
+  /* ---- odalar / filtreler ---- */
+  .filtre { display: flex; gap: 14px; margin: 24px -20px 0; padding: 0 20px 4px; overflow-x: auto; scrollbar-width: none; }
+  .filtre::-webkit-scrollbar { display: none; }
+  .filtre button { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; color: #555; flex: none; }
+  .filtre .kutu { width: 58px; height: 58px; border-radius: 16px; border: 1px solid var(--cizgi); display: grid; place-items: center; background: #fff; transition: .2s; }
+  .filtre .kutu svg { width: 26px; height: 26px; stroke: var(--yazi); }
+  .filtre button.secili .kutu { background: var(--koyu); border-color: var(--koyu); }
+  .filtre button.secili .kutu svg { stroke: #fff; }
+
+  .bolum { display: flex; justify-content: space-between; align-items: center; margin: 26px 0 14px; }
+  .bolum h2 { font-size: 18px; font-weight: 500; margin: 0; }
+  .sayac { font-size: 13px; color: var(--soluk); }
+
+  /* ---- cihaz kartları ---- */
+  .kartlar { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .kart { position: relative; text-align: left; background: var(--kart); border: 1px solid var(--cizgi); border-radius: 22px; padding: 14px; min-height: 178px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; transition: background .25s, color .25s, border-color .25s; }
+  .kart.acik { background: var(--koyu); color: #fff; border-color: var(--koyu); }
+  .kart .gorsel { position: absolute; inset: 14px 14px auto 14px; height: 92px; display: grid; place-items: center; }
+  .kart .ad { font-size: 15px; font-weight: 500; line-height: 1.2; }
+  .kart .bilgi { font-size: 12px; color: var(--soluk); margin-top: 3px; }
+  .kart.acik .bilgi { color: #a9a9a9; }
+
+  /* dikey anahtar (tasarımdaki gibi) */
+  .anahtar { position: absolute; right: 12px; bottom: 12px; width: 26px; height: 44px; border-radius: 999px; border: 1.5px solid #d6d6d6; background: #ececec; }
+  .anahtar::after { content: ""; position: absolute; left: 2px; bottom: 2px; width: 19px; height: 19px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .25s; }
+  .kart.acik .anahtar { background: #fff; border-color: #fff; }
+  .kart.acik .anahtar::after { transform: translateY(-18px); background: var(--koyu); }
+  .anahtar:disabled { opacity: .45; }
+
+  .ampul { width: 60px; height: 60px; overflow: visible; }
+  .ampul .cam { fill: #f4f4f2; stroke: #cfcfcf; }
+  .kart.acik .ampul { filter: drop-shadow(0 0 16px rgba(255,205,80,.75)); }
+  .kart.acik .ampul .cam { fill: #ffd76a; stroke: #ffd76a; }
+  .kart.acik .ampul .duy { fill: #555; }
+  .kure { width: 54px; height: 54px; border-radius: 50%; background: #eee; border: 5px solid #f6f6f6; box-shadow: inset 0 -6px 10px rgba(0,0,0,.06); transition: .25s; }
+  .termostat { width: 88px; height: 88px; border-radius: 50%; background: radial-gradient(circle at 50% 40%, #3a3a3a, #111 70%); border: 6px solid #e7e4dc; box-shadow: 0 6px 16px rgba(0,0,0,.18); display: grid; place-items: center; color: #fff; font-size: 26px; font-weight: 300; position: relative; }
+  .termostat small { position: absolute; bottom: 14px; font-size: 9px; color: #7ad; letter-spacing: .5px; }
+
+  /* ---- detay ekranı ---- */
+  .geri { width: 36px; height: 36px; margin-left: -8px; display: grid; place-items: center; }
+  .geri svg { width: 22px; height: 22px; }
+  .detay-ust { position: relative; min-height: 150px; }
+  .detay-ust h1 { margin-top: 18px; }
+  .yatay { margin-top: 18px; width: 48px; height: 28px; border-radius: 999px; background: #ddd; position: relative; transition: .25s; }
+  .yatay::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .25s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .yatay.acik { background: var(--koyu); }
+  .yatay.acik::after { transform: translateX(20px); }
+  .yatay:disabled { opacity: .45; }
+  .lamba { position: absolute; right: -10px; top: -28px; width: 150px; pointer-events: none; }
+
+  .kadran { position: relative; height: 330px; margin: 6px -20px 0; }
+  .kadran svg.yay { position: absolute; left: 0; top: 0; height: 100%; overflow: visible; }
+  .kadran .uc { position: absolute; left: 20px; font-size: 13px; color: var(--soluk); }
+  .kadran .uc.ust-uc { top: -22px; } .kadran .uc.alt-uc { bottom: -22px; }
+  .deger { position: absolute; right: 26px; top: 50%; transform: translateY(-50%); text-align: center; min-width: 150px; }
+  .deger b { display: block; font-size: 52px; font-weight: 400; letter-spacing: -1px; line-height: 1; }
+  .deger span { display: block; margin-top: 6px; color: #555; font-size: 14px; }
+  .renk-nokta { cursor: pointer; transition: r .2s; }
+
+  .satir { margin-top: 42px; }
+  .satir h3 { margin: 0 0 10px; font-weight: 500; font-size: 16px; display: flex; justify-content: space-between; }
+  .bilgiler { display: flex; gap: 26px; font-size: 13px; color: var(--soluk); }
+  .bilgiler b { color: var(--yazi); font-weight: 500; font-size: 15px; margin-left: 4px; }
+  .cubuk { position: relative; height: 4px; background: #e6e6e6; border-radius: 4px; margin: 14px 0 12px; }
+  .cubuk i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--koyu); border-radius: 4px; transition: width .4s; }
+  .cubuk em { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--koyu); transition: left .4s; }
+  .cetvel { display: flex; justify-content: space-between; font-size: 10px; color: var(--soluk); }
+  .cetvel span { width: 1px; height: 8px; background: #bbb; }
+
+  /* ---- kanal kodu ---- */
+  .kod { margin-top: 40px; background: #fff; border: 1px solid var(--cizgi); border-radius: 22px; padding: 22px; }
+  .kod p { margin: 0 0 14px; color: #444; }
+  .kod div { display: flex; gap: 8px; }
+  .kod input { flex: 1; min-width: 0; font: inherit; padding: 12px 14px; border-radius: 14px; border: 1px solid #ddd; background: #fafafa; }
+  .kod button { background: var(--koyu); color: #fff; padding: 0 18px; border-radius: 14px; }
+  .dip { margin-top: 30px; text-align: center; font-size: 12px; color: var(--soluk); }
+  .dip button { text-decoration: underline; color: var(--soluk); font-size: 12px; }
+</style>
+</head>
+<body>
+<main class="app">
+
+  <!-- ===== Ana ekran ===== -->
+  <section id="ana">
+    <div class="ust">
+      <div class="menu" aria-hidden="true"><i></i><i></i></div>
+      <div class="durum"><span class="nokta" id="nokta"></span><span id="durumYazi">Bağlanıyor…</span></div>
+    </div>
+    <h1 id="selam">Merhaba</h1>
+    <p class="alt-baslik">Akıllı evine hoş geldin</p>
+
+    <div id="kodKart" class="kod" hidden>
+      <p>Kontrol için kanal kodunu gir:</p>
+      <div><input id="kodGir" autocomplete="off" spellcheck="false" placeholder="kanal kodu"><button id="kodKaydet">Kaydet</button></div>
+    </div>
+
+    <div id="panel" hidden>
+      <nav class="filtre" id="filtre">
+        <button data-f="hepsi" class="secili"><span class="kutu"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Tümü</button>
+        <button data-f="isik"><span class="kutu"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg></span>Işıklar</button>
+        <button data-f="rgb"><span class="kutu"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><circle cx="9" cy="9" r="5"/><circle cx="15" cy="9" r="5"/><circle cx="12" cy="14.5" r="5"/></svg></span>RGB</button>
+        <button data-f="iklim"><span class="kutu"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round"><path d="M10 14.5V5a2 2 0 1 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M12 11v5"/></svg></span>İklim</button>
+      </nav>
+
+      <div class="bolum">
+        <h2>Cihazlar</h2>
+        <span class="sayac" id="sayac"></span>
+      </div>
+      <div class="kartlar" id="kartlar"></div>
+
+      <p class="dip">Her yerden çalışır · <button id="kodSil">Kanal kodunu değiştir</button></p>
+    </div>
+  </section>
+
+  <!-- ===== Detay ekranı ===== -->
+  <section id="detay" hidden>
+    <div class="detay-ust">
+      <button class="geri" id="geri" aria-label="Geri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+      <h1 id="dBaslik">Işık</h1>
+      <button class="yatay" id="dAnahtar" aria-label="Aç / kapat"></button>
+      <svg class="lamba" id="lamba" viewBox="0 0 150 230">
+        <defs>
+          <radialGradient id="isikHuzme" cx="50%" cy="0%" r="100%">
+            <stop offset="0" stop-color="var(--isik)" stop-opacity=".55"/>
+            <stop offset="1" stop-color="var(--isik)" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <line x1="75" y1="0" x2="75" y2="62" stroke="#222" stroke-width="2"/>
+        <path id="huzme" d="M40 150 L-10 230 L160 230 L110 150 Z" fill="url(#isikHuzme)" opacity="0"/>
+        <rect x="66" y="60" width="18" height="16" rx="3" fill="#1b1b1b"/>
+        <path d="M62 76h26l4 12H58z" fill="#2a2a2a"/>
+        <path d="M58 88c-26 6-36 30-38 60h110c-2-30-12-54-38-60z" fill="#141414"/>
+        <path d="M66 92c-14 6-22 22-24 40" stroke="#fff" stroke-opacity=".25" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <ellipse id="lambaAgiz" cx="75" cy="149" rx="55" ry="6" fill="#d8d8d8"/>
+      </svg>
+    </div>
+
+    <div class="kadran">
+      <span class="uc ust-uc" id="ustUc">Açık</span>
+      <svg class="yay" id="yay" viewBox="0 0 120 330"></svg>
+      <div class="deger"><b id="dDeger">–</b><span id="dEtiket">Durum</span></div>
+      <span class="uc alt-uc" id="altUc">Kapalı</span>
+    </div>
+
+    <div class="satir" id="dSatir"></div>
+  </section>
+
+</main>
+
+<script src="mqtt.min.js"></script>
+<script>
+  // ---- veriler ----
+  // Cihazın bildiği renkler (yay üzerinde yukarıdan aşağıya)
+  const RENKLER = [
+    ["kirmizi", "Kırmızı", "#ff3b30"], ["sari", "Sarı", "#ffcc00"], ["yesil", "Yeşil", "#34c759"],
+    ["turkuaz", "Turkuaz", "#32d4d4"], ["mavi", "Mavi", "#2f6bff"], ["mor", "Mor", "#b84bdc"],
+    ["beyaz", "Beyaz", "#f1f1f1"],
+  ];
+  const renk = (ad) => RENKLER.find(r => r[0] === ad);
+  const CIHAZLAR = [
+    { id: "led1", ad: "Işık 1", tur: "isik" },
+    { id: "led2", ad: "Işık 2", tur: "isik" },
+    { id: "rgb1", ad: "RGB Işık 1", tur: "rgb" },
+    { id: "rgb2", ad: "RGB Işık 2", tur: "rgb" },
+    { id: "iklim", ad: "Sıcaklık", tur: "iklim" },
+    { id: "hepsi", ad: "Tüm ışıklar", tur: "isik" },
+  ];
+  const ISIKLAR = ["led1", "led2", "rgb1", "rgb2"];
+
+  const oku = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  const yaz = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
+  const $ = (id) => document.getElementById(id);
+
+  let d = {};                 // cihazın son durumu
+  let bagli = false;          // sunucuya bağlı mı
+  let baglanti = "bekliyor";  // bekliyor | baglaniyor | bagli | yok
+  let cihazCevrim = null;     // cihaz çevrimiçi mi
+  let sonGuncelleme = null;
+  let filtre = "hepsi";
+  let acikDetay = null;
+  let gonder = () => {};
+
+  // Selamlama
+  const sa = new Date().getHours();
+  $("selam").textContent = sa < 6 ? "İyi geceler" : sa < 12 ? "Günaydın" : sa < 18 ? "Merhaba" : "İyi akşamlar";
+
+  // Kanal kodu (#k=... ile gelir, tarayıcıda saklanır)
+  const hash = new URLSearchParams(location.hash.slice(1));
+  if (hash.get("k")) { yaz("kanal", hash.get("k").trim()); history.replaceState(null, "", location.pathname); }
+  const kanal = oku("kanal");
+  $("kodKaydet").onclick = () => { const v = $("kodGir").value.trim(); if (v) { yaz("kanal", v); location.reload(); } };
+  $("kodGir").onkeydown = (e) => { if (e.key === "Enter") $("kodKaydet").click(); };
+  $("kodSil").onclick = () => { yaz("kanal", null); location.reload(); };
+
+  // ---- yardımcılar ----
+  const acikMi = (id) => id === "hepsi" ? ISIKLAR.some(acikMi) : id.startsWith("led") ? d[id] === 1 : (d[id] && d[id] !== "kapali");
+  const hazir = () => bagli;
+  function rgbAc(id) { return oku("son_" + id) || "beyaz"; }
+
+  function komutAnahtar(id) {
+    if (id === "hepsi") return hepsiAnahtar();
+    if (id.startsWith("led")) {
+      const n = id[3], ac = !acikMi(id);
+      d[id] = ac ? 1 : 0;
+      gonder(`/${n}/${ac ? "ac" : "kapat"}`);
+    } else {
+      const n = id[3], hedef = acikMi(id) ? "kapali" : rgbAc(id);
+      d[id] = hedef;
+      gonder(`/rgb${n}/${hedef}`);
+    }
+    ciz();
+  }
+  function rgbSec(id, ad) {
+    d[id] = ad;
+    if (ad !== "kapali") yaz("son_" + id, ad);
+    gonder(`/rgb${id[3]}/${ad}`);
+    ciz();
+  }
+
+  // ---- kartlar ----
+  const AMPUL = `<svg class="ampul" viewBox="0 0 64 64"><path class="cam" stroke-width="1.5" d="M32 6a18 18 0 0 0-11 32.3c2.2 1.7 3.5 4.2 3.5 7V48h15v-2.7c0-2.8 1.3-5.3 3.5-7A18 18 0 0 0 32 6z"/><rect class="duy" x="24" y="50" width="16" height="4" rx="2" fill="#bbb"/><rect class="duy" x="26" y="56" width="12" height="4" rx="2" fill="#bbb"/></svg>`;
+
+  function kartHTML(c) {
+    if (c.tur === "iklim") {
+      const var_ = typeof d.sic === "number";
+      return `<button class="kart" data-id="iklim" data-tur="iklim">
+        <div class="gorsel"><div class="termostat">${var_ ? d.sic : "–"}<small>${var_ ? "°C" : ""}</small></div></div>
+        <div class="ad">${c.ad}</div>
+        <div class="bilgi">${var_ ? `Nem %${d.nem}` : "Sensör yok"}</div></button>`;
+    }
+    const acik = acikMi(c.id);
+    let gorsel, bilgi;
+    if (c.id === "hepsi") {
+      const n = ISIKLAR.filter(acikMi).length;
+      gorsel = `<svg class="ampul" viewBox="0 0 64 64" fill="none" stroke="${acik ? "#ffd76a" : "#bdbdbd"}" stroke-width="3" stroke-linecap="round"><path d="M32 8v20"/><path d="M19 15a20 20 0 1 0 26 0"/></svg>`;
+      bilgi = d.led1 == null ? "—" : `${n} / 4 açık`;
+    } else if (c.tur === "isik") {
+      gorsel = AMPUL;
+      bilgi = d[c.id] == null ? "—" : acik ? "Açık" : "Kapalı";
+    } else {
+      const r = renk(d[c.id]);
+      gorsel = `<div class="kure" style="${r ? `background:${r[2]};border-color:${r[2]}55;box-shadow:0 0 26px ${r[2]}aa` : ""}"></div>`;
+      bilgi = d[c.id] == null ? "—" : r ? r[1] : "Kapalı";
+    }
+    return `<div class="kart${acik ? " acik" : ""}" data-id="${c.id}" data-tur="${c.tur}" role="button" tabindex="0">
+      <div class="gorsel">${gorsel}</div>
+      <div class="ad">${c.ad}</div>
+      <div class="bilgi">${bilgi}</div>
+      <button class="anahtar" data-anahtar="${c.id}" aria-label="${c.ad} aç / kapat" ${hazir() ? "" : "disabled"}></button>
+    </div>`;
+  }
+
+  function anaCiz() {
+    $("kartlar").innerHTML = CIHAZLAR.filter(c => filtre === "hepsi" || c.tur === filtre).map(kartHTML).join("");
+    $("sayac").textContent = d.led1 == null ? "" : `${ISIKLAR.filter(acikMi).length} ışık açık`;
+  }
+
+  // ---- detay ----
+  // Sol yay: merkez (-50,165), yarıçap 170, açı -68° (üst) .. +68° (alt)
+  const YAY = { cx: -50, cy: 165, r: 170, a: 68 };
+  const nokta = (aci) => {
+    const t = aci * Math.PI / 180;
+    return [YAY.cx + YAY.r * Math.cos(t), YAY.cy + YAY.r * Math.sin(t)];
+  };
+  const yayYol = (a1, a2) => {
+    const [x1, y1] = nokta(a1), [x2, y2] = nokta(a2);
+    return `M${x1.toFixed(1)} ${y1.toFixed(1)} A${YAY.r} ${YAY.r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+  };
+  // v: 0 (alt) .. 1 (üst)
+  const vAci = (v) => YAY.a - v * 2 * YAY.a;
+
+  function yayCiz(v, noktalar) {
+    let s = `<path d="${yayYol(-YAY.a, YAY.a)}" stroke="#e8e8e8" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+    if (v != null && v > 0.001) s += `<path d="${yayYol(vAci(v), YAY.a)}" stroke="#161616" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+    if (noktalar) s += noktalar;
+    else if (v != null) { const [x, y] = nokta(vAci(v)); s += `<circle cx="${x}" cy="${y}" r="8" fill="#161616"/>`; }
+    $("yay").innerHTML = s;
+  }
+
+  function detayCiz() {
+    const id = acikDetay, c = CIHAZLAR.find(x => x.id === id);
+    $("dBaslik").textContent = c.ad;
+    const lamba = $("lamba"), anahtar = $("dAnahtar");
+    let isik = null;
+
+    if (c.tur === "iklim") {
+      anahtar.hidden = true;
+      lamba.style.display = "none";
+      const var_ = typeof d.sic === "number";
+      $("ustUc").textContent = "50°C"; $("altUc").textContent = "0°C";
+      $("dDeger").textContent = var_ ? `${d.sic}°C` : "–";
+      $("dEtiket").textContent = var_ ? "Sıcaklık" : "Sensör yok";
+      yayCiz(var_ ? Math.max(0, Math.min(1, d.sic / 50)) : null);
+      const nem = var_ ? d.nem : 0;
+      $("dSatir").innerHTML = `
+        <h3><span>Nem</span><span>${var_ ? "%" + nem : "–"}</span></h3>
+        <div class="cubuk"><i style="width:${nem}%"></i><em style="left:${nem}%"></em></div>
+        <div class="cetvel"><small>%0</small><span></span><span></span><span></span><span></span><span></span><small>%100</small></div>
+        <div class="satir"><h3>Sensör</h3><div class="bilgiler"><div>Tür<b>DHT11</b></div><div>Ölçüm<b>5 sn'de bir</b></div></div></div>`;
+      return;
+    }
+
+    anahtar.hidden = false;
+    lamba.style.display = "";
+    const acik = acikMi(id);
+    anahtar.classList.toggle("acik", acik);
+    anahtar.disabled = !hazir();
+
+    if (c.tur === "isik") {
+      isik = acik ? "#ffd76a" : null;
+      $("ustUc").textContent = "Açık"; $("altUc").textContent = "Kapalı";
+      $("dDeger").textContent = d[id] == null ? "–" : acik ? "Açık" : "Kapalı";
+      $("dEtiket").textContent = "Durum";
+      yayCiz(d[id] == null ? null : acik ? 1 : 0);
+    } else {
+      const r = renk(d[id]);
+      isik = r ? r[2] : null;
+      $("ustUc").textContent = ""; $("altUc").textContent = "";
+      $("dDeger").textContent = d[id] == null ? "–" : r ? r[1] : "Kapalı";
+      $("dEtiket").textContent = "Renk";
+      // Renkler yay üzerinde dizilir; seçili olana kadar yay koyulaşır
+      const n = RENKLER.length, sec = RENKLER.findIndex(x => x[0] === d[id]);
+      let noktalar = "";
+      RENKLER.forEach(([ad, , css], i) => {
+        const v = 1 - i / (n - 1), [x, y] = nokta(vAci(v)), s = i === sec;
+        noktalar += `<g class="renk-nokta" data-renk="${ad}">
+          <circle cx="${x}" cy="${y}" r="16" fill="transparent"/>
+          ${s ? `<circle cx="${x}" cy="${y}" r="13" fill="none" stroke="#161616" stroke-width="2"/>` : ""}
+          <circle cx="${x}" cy="${y}" r="${s ? 9 : 8}" fill="${css}" stroke="${ad === "beyaz" ? "#ccc" : "none"}"/></g>`;
+      });
+      yayCiz(sec >= 0 ? 1 - sec / (n - 1) : null, noktalar);
+    }
+
+    // Lamba ışığı
+    lamba.style.setProperty("--isik", isik || "#fff");
+    $("huzme").setAttribute("opacity", isik ? "1" : "0");
+    $("lambaAgiz").setAttribute("fill", isik || "#d8d8d8");
+    $("lambaAgiz").style.filter = isik ? `drop-shadow(0 0 10px ${isik})` : "";
+
+    const zaman = sonGuncelleme ? sonGuncelleme.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "–";
+    $("dSatir").innerHTML = `
+      <h3>Bilgi</h3>
+      <div class="bilgiler">
+        <div>Bağlantı<b>${cihazCevrim ? "Çevrimiçi" : cihazCevrim === false ? "Çevrimdışı" : "–"}</b></div>
+        <div>Güncelleme<b>${zaman}</b></div>
+        <div>Pin<b>${{ led1: "D5", led2: "D9", rgb1: "D10-12", rgb2: "D4·7·8" }[id]}</b></div>
+      </div>`;
+  }
+
+  function durumCiz() {
+    const n = $("nokta"), y = $("durumYazi");
+    if (!kanal) { n.className = "nokta"; y.textContent = "Kod bekleniyor"; return; }
+    if (!bagli) {
+      if (baglanti === "yok") { n.className = "nokta hata"; y.textContent = "Sunucuya ulaşılamıyor"; }
+      else { n.className = "nokta"; y.textContent = baglanti === "baglaniyor" ? "Yeniden bağlanıyor…" : "Bağlanıyor…"; }
+      return;
+    }
+    if (cihazCevrim) { n.className = "nokta ok"; y.textContent = "Cihaz çevrimiçi"; }
+    else if (cihazCevrim === false) { n.className = "nokta hata"; y.textContent = "Cihaz çevrimdışı"; }
+    else { n.className = "nokta"; y.textContent = "Cihaz bekleniyor"; }
+  }
+
+  function ciz() {
+    durumCiz();
+    if (acikDetay) detayCiz(); else anaCiz();
+  }
+
+  // ---- etkileşim ----
+  $("filtre").onclick = (e) => {
+    const b = e.target.closest("[data-f]"); if (!b) return;
+    filtre = b.dataset.f;
+    for (const x of $("filtre").children) x.classList.toggle("secili", x === b);
+    anaCiz();
+  };
+  $("kartlar").onclick = (e) => {
+    const a = e.target.closest("[data-anahtar]");
+    if (a) { if (!a.disabled) komutAnahtar(a.dataset.anahtar); return; }
+    const k = e.target.closest(".kart"); if (!k) return;
+    if (k.dataset.id === "hepsi") { if (hazir()) hepsiAnahtar(); return; }
+    acikDetay = k.dataset.id;
+    $("ana").hidden = true; $("detay").hidden = false;
+    scrollTo(0, 0);
+    ciz();
+  };
+  $("geri").onclick = () => { acikDetay = null; $("detay").hidden = true; $("ana").hidden = false; ciz(); };
+  $("dAnahtar").onclick = () => komutAnahtar(acikDetay);
+  $("yay").onclick = (e) => {
+    const g = e.target.closest("[data-renk]");
+    if (g && hazir() && acikDetay?.startsWith("rgb")) rgbSec(acikDetay, g.dataset.renk);
+  };
+  function hepsiAnahtar() {
+    const ac = !ISIKLAR.some(acikMi);
+    Object.assign(d, ac ? { led1: 1, led2: 1, rgb1: "beyaz", rgb2: "beyaz" } : { led1: 0, led2: 0, rgb1: "kapali", rgb2: "kapali" });
+    gonder(ac ? "/hepsi/ac" : "/hepsi/kapat");
+    ciz();
+  }
+
+  // ---- bağlantı ----
+  if (!kanal) {
+    $("kodKart").hidden = false;
+    durumCiz();
+  } else {
+    $("panel").hidden = false;
+    try { d = JSON.parse(oku("sonDurum") || "{}") || {}; } catch {}
+    ciz();
+    if (!window.mqtt) {
+      $("durumYazi").textContent = "Kütüphane yüklenemedi";
+    } else {
+      const kok = "wifiisik/" + kanal;
+      let sonBagliAn = Date.now();
+      const istemci = mqtt.connect("wss://broker.hivemq.com:8884/mqtt", {
+        clientId: "web-" + Math.random().toString(16).slice(2, 10),
+        reconnectPeriod: 3000, connectTimeout: 10000,
+      });
+      gonder = (k) => istemci.publish(kok + "/k", k);
+      istemci.on("connect", () => { bagli = true; baglanti = "bagli"; istemci.subscribe([kok + "/d", kok + "/o"]); ciz(); });
+      istemci.on("reconnect", () => { if (baglanti !== "yok") baglanti = "baglaniyor"; ciz(); });
+      istemci.on("close", () => { bagli = false; ciz(); });
+      istemci.on("offline", () => { bagli = false; ciz(); });
+      istemci.on("error", (e) => console.warn("MQTT hata:", e && e.message));
+      // 12 sn içinde bağlanamazsa gerçekten "ulaşılamıyor" de (denemeye devam eder)
+      setInterval(() => {
+        if (!bagli && Date.now() - sonBagliAn > 12000 && baglanti !== "yok") { baglanti = "yok"; ciz(); }
+        if (bagli) sonBagliAn = Date.now();
+      }, 1000);
+      // Telefon ekranı kapanıp açılınca bağlantı kopmuş olabilir: sayfa görünür olunca hemen yeniden dene
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && !istemci.connected) { sonBagliAn = Date.now(); baglanti = "baglaniyor"; ciz(); istemci.reconnect(); }
+      });
+      istemci.on("message", (konu, veri, paket) => {
+        const metin = veri.toString();
+        if (konu.endsWith("/o")) cihazCevrim = metin === "1";
+        else {
+          try { d = JSON.parse(metin); sonGuncelleme = new Date(); yaz("sonDurum", metin); } catch {}
+          if (!paket.retain) cihazCevrim = true;   // canlı durum geldiyse cihaz kesin çevrimiçi
+        }
+        ciz();
+      });
+    }
+  }
+</script>
+</body>
+</html>
