@@ -285,6 +285,11 @@
           <button class="yatay" id="gcAnah" aria-label="Gece ışığı"></button>
         </div>
         <div class="oto-satir">
+          <span class="ik"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V11m0-.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.5a6 6 0 0 1-4.6-2.2L4.6 15.6a1.5 1.5 0 0 1 2.3-1.9L9 16"/></svg></span>
+          <div class="orta"><div class="baslik">Dokunmatik sensör</div><div class="alt">Kendi kendine tetikleniyorsa kapat</div></div>
+          <button class="yatay" id="dkAnah" aria-label="Dokunmatik sensör"></button>
+        </div>
+        <div class="oto-satir">
           <span class="ik"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></span>
           <div class="orta"><div class="baslik">Telefona bildirim</div><div class="alt" id="biYazi">Pil, elektrik kesintisi, sıcaklık, yeniden başlama</div></div>
           <button class="yatay" id="biAnah" aria-label="Telefona bildirim"></button>
@@ -745,6 +750,7 @@
         `<button data-bit="${i}" class="${(maske >> i) & 1 ? "secili" : ""}" ${hazir() ? "" : "disabled"}>${t}</button>`).join("");
     }
     $("gcAnah").classList.toggle("acik", !!ayar.gc); $("gcAnah").disabled = !hazir();
+    $("dkAnah").classList.toggle("acik", ayar.dk !== 0); $("dkAnah").disabled = !hazir();
     $("biAnah").classList.toggle("acik", !!ayar.bi); $("biAnah").disabled = !hazir();
     $("biYazi").innerHTML = ayar.nk
       ? `Telefona <b>ntfy</b> uygulamasını kur, <b>${ayar.nk}</b> konusuna abone ol. <a class="kucuk-link" href="https://ntfy.sh/${ayar.nk}" target="_blank" rel="noopener">Aç</a>`
@@ -800,6 +806,7 @@
     gonder(`/gun/${k}/${maske.toString(16)}`);
     otoCiz();
   });
+  $("dkAnah").onclick = () => { if (!hazir()) return; ayar.dk = ayar.dk === 0 ? 1 : 0; gonder(ayar.dk ? "/dokun/ac" : "/dokun/kapat"); otoCiz(); };
   $("gcAnah").onclick = () => { if (!hazir()) return; ayar.gc = ayar.gc ? 0 : 1; gonder(ayar.gc ? "/gece/ac" : "/gece/kapat"); otoCiz(); };
   $("biAnah").onclick = () => { if (!hazir()) return; ayar.bi = ayar.bi ? 0 : 1; gonder(ayar.bi ? "/bildirim/ac" : "/bildirim/kapat"); otoCiz(); };
   $("pHepsi").oninput = () => { $("pHepsiYazi").textContent = "%" + $("pHepsi").value; };
