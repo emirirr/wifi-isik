@@ -32,6 +32,11 @@
   .menu i:last-child { width: 62%; }
   .durum { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--soluk); background: var(--bg); padding: 7px 12px; border-radius: 999px; }
   @media (min-width: 480px) { .durum { background: #f5f5f4; } }
+  .sag { display: flex; align-items: center; gap: 8px; }
+  .pil { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #444; background: var(--bg); padding: 7px 11px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+  @media (min-width: 480px) { .pil { background: #f5f5f4; } }
+  .pil svg { width: 24px; height: 13px; }
+  .pil.dusuk { color: var(--hata); }
   .nokta { width: 8px; height: 8px; border-radius: 50%; background: #c9c9c9; }
   .nokta.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(47,179,91,.18); }
   .nokta.hata { background: var(--hata); }
@@ -125,7 +130,10 @@
   <section id="ana">
     <div class="ust">
       <div class="menu" aria-hidden="true"><i></i><i></i></div>
-      <div class="durum"><span class="nokta" id="nokta"></span><span id="durumYazi">Bağlanıyor…</span></div>
+      <div class="sag">
+        <div class="pil" id="pilKutu" hidden title="Pil"><svg viewBox="0 0 26 13"><rect x=".75" y=".75" width="21.5" height="11.5" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="23.5" y="4" width="2" height="5" rx="1" fill="currentColor"/><rect id="pilDolu" x="3" y="3" width="17" height="7" rx="1.5" fill="currentColor"/></svg><span id="pilYazi"></span></div>
+        <div class="durum"><span class="nokta" id="nokta"></span><span id="durumYazi">Bağlanıyor…</span></div>
+      </div>
     </div>
     <h1 id="selam">Merhaba</h1>
     <p class="alt-baslik">Akıllı evine hoş geldin</p>
@@ -401,8 +409,19 @@
     else { n.className = "nokta"; y.textContent = "Cihaz bekleniyor"; }
   }
 
+  function pilCiz() {
+    const var_ = typeof d.pil === "number";
+    $("pilKutu").hidden = !var_;
+    if (!var_) return;
+    $("pilDolu").setAttribute("width", Math.max(1.5, 17 * d.pil / 100).toFixed(1));
+    $("pilYazi").textContent = (d.ps ? "⚡ " : "") + "%" + d.pil;
+    $("pilKutu").classList.toggle("dusuk", d.pil < 15 && !d.ps);
+    $("pilKutu").title = `Pil ${(d.pv / 100).toFixed(2)} V${d.ps ? " · şarj oluyor" : ""}`;
+  }
+
   function ciz() {
     durumCiz();
+    pilCiz();
     if (acikDetay) detayCiz(); else anaCiz();
   }
 
