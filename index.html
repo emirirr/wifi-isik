@@ -410,13 +410,14 @@
   }
 
   function pilCiz() {
+    // Pil her zaman görünür; veri yoksa "–"
     const var_ = typeof d.pil === "number";
-    $("pilKutu").hidden = !var_;
-    if (!var_) return;
-    $("pilDolu").setAttribute("width", Math.max(1.5, 17 * d.pil / 100).toFixed(1));
-    $("pilYazi").textContent = (d.ps ? "⚡ " : "") + "%" + d.pil;
-    $("pilKutu").classList.toggle("dusuk", d.pil < 15 && !d.ps);
-    $("pilKutu").title = `Pil ${(d.pv / 100).toFixed(2)} V${d.ps ? " · şarj oluyor" : ""}`;
+    const y = var_ ? d.pil : 0;
+    $("pilKutu").hidden = false;
+    $("pilDolu").setAttribute("width", Math.max(1.5, 17 * y / 100).toFixed(1));
+    $("pilYazi").textContent = var_ ? (d.ps ? "⚡ " : "") + "%" + d.pil : "–";
+    $("pilKutu").classList.toggle("dusuk", var_ && d.pil < 15 && !d.ps);
+    $("pilKutu").title = typeof d.pv === "number" ? `Pil ${(d.pv / 100).toFixed(2)} V${d.ps ? " · şarj oluyor" : ""}` : "Pil";
   }
 
   function ciz() {
