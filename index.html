@@ -273,11 +273,30 @@
   // ---- yardımcılar ----
   const acikMi = (id) => id === "hepsi" ? ISIKLAR.some(acikMi) : id.startsWith("led") ? d[id] === 1 : (d[id] && d[id] !== "kapali");
   const hazir = () => bagli;
+  // Işık başına animasyon: d.m = "0130" gibi (LED1, LED2, RGB1, RGB2), rakam = MODLAR sırası
+  const ISIK_NO = { led1: 0, led2: 1, rgb1: 2, rgb2: 3 };
+  const modNo = (id) => +((d.m || "0000")[ISIK_NO[id]] || 0);
+  function modAyarla(id, no) {
+    const m = (d.m || "0000").split("");
+    m[ISIK_NO[id]] = String(no);
+    d.m = m.join("");
+  }
+  function modBaslat(id, ad) {
+    const no = MODLAR.findIndex(x => x[0] === ad);
+    modAyarla(id, no);
+    if (no) { if (id.startsWith("led")) d[id] = 1; else if (!d[id] || d[id] === "kapali") d[id] = rgbAc(id); }
+    gonder(`/mod${ISIK_NO[id] + 1}/${ad}`);
+    ciz();
+  }
+  // LED'de renk değişmediği için "Gökkuşağı" sadece RGB'lerde
+  const isikModlari = (id) => MODLAR.filter(x => !(id.startsWith("led") && x[0] === "renk"));
+  const modButonlari = (aktif, liste) => liste.map(([ad, etiket, ikon]) =>
+    `<button class="mod${ad === aktif ? " secili" : ""}" data-mod="${ad}" ${hazir() ? "" : "disabled"}>${ikon}${etiket}</button>`).join("");
   function rgbAc(id) { return oku("son_" + id) || "beyaz"; }
 
   function komutAnahtar(id) {
     if (id === "hepsi") return hepsiAnahtar();
-    d.mod = "yok";
+    modAyarla(id, 0);
     if (id.startsWith("led")) {
       const n = id[3], ac = !acikMi(id);
       d[id] = ac ? 1 : 0;
@@ -290,7 +309,7 @@
     ciz();
   }
   function rgbSec(id, ad) {
-    d.mod = "yok";
+    modAyarla(id, 0);
     d[id] = ad;
     if (ad !== "kapali") yaz("son_" + id, ad);
     gonder(`/rgb${id[3]}/${ad}`);
@@ -317,10 +336,12 @@
     } else if (c.tur === "isik") {
       gorsel = AMPUL;
       bilgi = d[c.id] == null ? "—" : acik ? "Açık" : "Kapalı";
+      if (modNo(c.id)) bilgi = "✦ " + MODLAR[modNo(c.id)][1];
     } else {
       const r = renk(d[c.id]);
       gorsel = `<div class="kure" style="${r ? `background:${r[2]};border-color:${r[2]}55;box-shadow:0 0 26px ${r[2]}aa` : ""}"></div>`;
       bilgi = d[c.id] == null ? "—" : r ? r[1] : "Kapalı";
+      if (modNo(c.id)) bilgi = "✦ " + MODLAR[modNo(c.id)][1];
     }
     return `<div class="kart${acik ? " acik" : ""}" data-id="${c.id}" data-tur="${c.tur}" role="button" tabindex="0">
       <div class="gorsel">${gorsel}</div>
@@ -331,15 +352,16 @@
   }
 
   function modCiz() {
-    const aktif = d.mod || "yok";
-    $("modlar").innerHTML = MODLAR.map(([ad, etiket, ikon]) =>
-      `<button class="mod${ad === aktif ? " secili" : ""}" data-mod="${ad}" ${hazir() ? "" : "disabled"}>${ikon}${etiket}</button>`
-    ).join("");
-    const m = MODLAR.find(x => x[0] === aktif);
-    $("modYazi").textContent = aktif === "yok" ? "" : m ? m[1] + " açık" : "";
-    $("modIpucu").textContent = aktif === "ses"
+    // Dört ışık aynı animasyondaysa o seçili görünür; farklıysa "Karışık"
+    const m = d.m || "0000";
+    const ayni = m.split("").every(x => x === m[0]);
+    const aktif = ayni ? (MODLAR[+m[0]] || MODLAR[0])[0] : null;
+    $("modlar").innerHTML = modButonlari(aktif, MODLAR);
+    const sayi = m.split("").filter(x => x !== "0").length;
+    $("modYazi").textContent = !sayi ? "" : ayni ? MODLAR[+m[0]][1] + " · hepsi" : `Karışık · ${sayi} ışıkta`;
+    $("modIpucu").textContent = m.includes("6")
       ? "Ses modu için A7'ye bağlı bir mikrofon modülü gerekir."
-      : aktif !== "yok" ? "Bir ışığı elle değiştirince animasyon durur." : "";
+      : sayi ? "Buradan seçince tüm ışıklara uygulanır. Tek ışık için ışığın kartına dokun." : "Tek ışığa animasyon vermek için ışığın kartına dokun.";
   }
 
   function anaCiz() {
@@ -431,13 +453,21 @@
     $("lambaAgiz").style.filter = isik ? `drop-shadow(0 0 10px ${isik})` : "";
 
     const zaman = sonGuncelleme ? sonGuncelleme.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "–";
+    const mAktif = MODLAR[modNo(id)][0];
+    if (modNo(id)) { $("dDeger").textContent = MODLAR[modNo(id)][1]; $("dEtiket").textContent = "Animasyon"; }
+    // Uzun yazılar yaya taşmasın
+    const uz = $("dDeger").textContent.length;
+    $("dDeger").style.fontSize = uz > 8 ? "30px" : uz > 6 ? "38px" : "";
     $("dSatir").innerHTML = `
-      <h3>Bilgi</h3>
+      <h3>Animasyon</h3>
+      <div class="modlar" id="dModlar">${modButonlari(mAktif, isikModlari(id))}</div>
+      <p class="ipucu">${mAktif === "ses" ? "Ses modu için A7'ye bağlı bir mikrofon modülü gerekir." : mAktif === "kovala" ? "Kovala, bu modu seçtiğin ışıklar arasında dolaşır." : ""}</p>
+      <div class="satir" style="margin-top:22px"><h3>Bilgi</h3>
       <div class="bilgiler">
         <div>Bağlantı<b>${cihazCevrim ? "Çevrimiçi" : cihazCevrim === false ? "Çevrimdışı" : "–"}</b></div>
         <div>Güncelleme<b>${zaman}</b></div>
         <div>Pin<b>${{ led1: "D5", led2: "D9", rgb1: "D10-12", rgb2: "D4·7·8" }[id]}</b></div>
-      </div>`;
+      </div></div>`;
   }
 
   function durumCiz() {
@@ -490,10 +520,17 @@
   $("modlar").onclick = (e) => {
     const b = e.target.closest("[data-mod]");
     if (!b || b.disabled) return;
-    d.mod = b.dataset.mod;
-    if (d.mod !== "yok") Object.assign(d, { led1: 1, led2: 1, rgb1: d.rgb1 && d.rgb1 !== "kapali" ? d.rgb1 : "beyaz", rgb2: d.rgb2 && d.rgb2 !== "kapali" ? d.rgb2 : "beyaz" });
-    gonder("/mod/" + d.mod);
+    const ad = b.dataset.mod, no = MODLAR.findIndex(x => x[0] === ad);
+    d.m = String(no).repeat(4);
+    if (no) Object.assign(d, { led1: 1, led2: 1, rgb1: d.rgb1 && d.rgb1 !== "kapali" ? d.rgb1 : rgbAc("rgb1"), rgb2: d.rgb2 && d.rgb2 !== "kapali" ? d.rgb2 : rgbAc("rgb2") });
+    gonder("/mod/" + ad);
     ciz();
+  };
+  // Tek ışığın animasyonu (detay ekranı)
+  $("dSatir").onclick = (e) => {
+    const b = e.target.closest("[data-mod]");
+    if (!b || b.disabled || !acikDetay || !(acikDetay in ISIK_NO)) return;
+    modBaslat(acikDetay, b.dataset.mod);
   };
   $("geri").onclick = () => { acikDetay = null; $("detay").hidden = true; $("ana").hidden = false; ciz(); };
   $("dAnahtar").onclick = () => komutAnahtar(acikDetay);
@@ -502,7 +539,7 @@
     if (g && hazir() && acikDetay?.startsWith("rgb")) rgbSec(acikDetay, g.dataset.renk);
   };
   function hepsiAnahtar() {
-    d.mod = "yok";
+    d.m = "0000";
     const ac = !ISIKLAR.some(acikMi);
     Object.assign(d, ac ? { led1: 1, led2: 1, rgb1: "beyaz", rgb2: "beyaz" } : { led1: 0, led2: 0, rgb1: "kapali", rgb2: "kapali" });
     gonder(ac ? "/hepsi/ac" : "/hepsi/kapat");
