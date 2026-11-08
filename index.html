@@ -328,6 +328,7 @@
     ["kovala", "Kovala", `<svg viewBox="0 0 28 28" ${IK}><circle cx="5" cy="14" r="2" opacity=".3"/><circle cx="11" cy="14" r="2.5" opacity=".6"/><circle cx="18" cy="14" r="3.2"/><path d="M23 10l3 4-3 4"/></svg>`],
     ["parti", "Parti", `<svg viewBox="0 0 28 28" ${IK}><path d="M14 3l1.8 5.2L21 10l-5.2 1.8L14 17l-1.8-5.2L7 10l5.2-1.8z"/><path d="M21 18l.9 2.1L24 21l-2.1.9L21 24l-.9-2.1L18 21l2.1-.9zM6 17l.7 1.6L8.3 19l-1.6.7L6 21.3l-.7-1.6L3.7 19l1.6-.7z"/></svg>`],
     ["sicak", "Sıcaklık", `<svg viewBox="0 0 28 28" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M12 17V6a2.5 2.5 0 0 1 5 0v11a4.5 4.5 0 1 1-5 0z" stroke="currentColor"/><path d="M14.5 13v6" stroke="#ff3b30" stroke-width="2.4"/></svg>`],
+    ["ses", "Ses", `<svg viewBox="0 0 28 28" ${IK}><rect x="10.5" y="3" width="7" height="13" rx="3.5"/><path d="M6.5 13a7.5 7.5 0 0 0 15 0M14 20.5V25M10 25h8"/></svg>`],
   ];
 
   const oku = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -448,7 +449,9 @@
     $("modlar").innerHTML = modButonlari(aktif, MODLAR);
     const sayi = m.split("").filter(x => x !== "0").length;
     $("modYazi").textContent = !sayi ? "" : ayni ? MODLAR[+m[0]][1] + " · hepsi" : `Karışık · ${sayi} ışıkta`;
-    $("modIpucu").textContent = m.includes("6")
+    $("modIpucu").textContent = m.includes("7")
+      ? "Ses: ışıklar müziğe ve sese göre parlar, RGB'lerin rengi sesle döner."
+      : m.includes("6")
       ? "Sıcaklık: RGB rengi odanın sıcaklığını gösterir (18°C mavi → 30°C kırmızı)."
       : sayi ? "Kapattığın ışık animasyonda bekler, açınca devam eder. Durdurmak için Sabit'i seç." : "Tek ışığa animasyon vermek için ışığın kartına dokun.";
   }
@@ -553,7 +556,7 @@
     $("dSatir").innerHTML = `
       <h3>Animasyon</h3>
       <div class="modlar" id="dModlar">${modButonlari(mAktif, isikModlari(id))}</div>
-      <p class="ipucu">${mAktif === "sicak" ? "18°C ve altı mavi, 30°C ve üstü kırmızı." : mAktif === "kovala" ? "Kovala, bu modu seçtiğin ışıklar arasında dolaşır." : ""}</p>
+      <p class="ipucu">${mAktif === "sicak" ? "18°C ve altı mavi, 30°C ve üstü kırmızı." : mAktif === "ses" ? "Işık sesin şiddetine göre parlar; sessizlikte söner." : mAktif === "kovala" ? "Kovala, bu modu seçtiğin ışıklar arasında dolaşır." : ""}</p>
       <div class="satir" style="margin-top:22px"><h3>Bilgi</h3>
       <div class="bilgiler">
         <div>Bağlantı<b>${cihazCevrim ? "Çevrimiçi" : cihazCevrim === false ? "Çevrimdışı" : "–"}</b></div>
