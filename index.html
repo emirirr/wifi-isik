@@ -296,15 +296,15 @@
 
   function komutAnahtar(id) {
     if (id === "hepsi") return hepsiAnahtar();
-    modAyarla(id, 0);
+    // Aç/kapa animasyonu iptal etmez: kapalı ışık duraklar, açılınca animasyona döner
     if (id.startsWith("led")) {
       const n = id[3], ac = !acikMi(id);
       d[id] = ac ? 1 : 0;
       gonder(`/${n}/${ac ? "ac" : "kapat"}`);
     } else {
-      const n = id[3], hedef = acikMi(id) ? "kapali" : rgbAc(id);
-      d[id] = hedef;
-      gonder(`/rgb${n}/${hedef}`);
+      const n = id[3], ac = !acikMi(id);
+      d[id] = ac ? rgbAc(id) : "kapali";
+      gonder(`/rgb${n}/${ac ? "ac" : "kapali"}`);
     }
     ciz();
   }
@@ -336,12 +336,12 @@
     } else if (c.tur === "isik") {
       gorsel = AMPUL;
       bilgi = d[c.id] == null ? "—" : acik ? "Açık" : "Kapalı";
-      if (modNo(c.id)) bilgi = "✦ " + MODLAR[modNo(c.id)][1];
+      if (modNo(c.id)) bilgi = (acik ? "" : "Kapalı · ") + "✦ " + MODLAR[modNo(c.id)][1];
     } else {
       const r = renk(d[c.id]);
       gorsel = `<div class="kure" style="${r ? `background:${r[2]};border-color:${r[2]}55;box-shadow:0 0 26px ${r[2]}aa` : ""}"></div>`;
       bilgi = d[c.id] == null ? "—" : r ? r[1] : "Kapalı";
-      if (modNo(c.id)) bilgi = "✦ " + MODLAR[modNo(c.id)][1];
+      if (modNo(c.id)) bilgi = (acik ? "" : "Kapalı · ") + "✦ " + MODLAR[modNo(c.id)][1];
     }
     return `<div class="kart${acik ? " acik" : ""}" data-id="${c.id}" data-tur="${c.tur}" role="button" tabindex="0">
       <div class="gorsel">${gorsel}</div>
@@ -361,7 +361,7 @@
     $("modYazi").textContent = !sayi ? "" : ayni ? MODLAR[+m[0]][1] + " · hepsi" : `Karışık · ${sayi} ışıkta`;
     $("modIpucu").textContent = m.includes("6")
       ? "Ses modu için A7'ye bağlı bir mikrofon modülü gerekir."
-      : sayi ? "Buradan seçince tüm ışıklara uygulanır. Tek ışık için ışığın kartına dokun." : "Tek ışığa animasyon vermek için ışığın kartına dokun.";
+      : sayi ? "Kapattığın ışık animasyonda bekler, açınca devam eder. Durdurmak için Sabit'i seç." : "Tek ışığa animasyon vermek için ışığın kartına dokun.";
   }
 
   function anaCiz() {
@@ -539,9 +539,8 @@
     if (g && hazir() && acikDetay?.startsWith("rgb")) rgbSec(acikDetay, g.dataset.renk);
   };
   function hepsiAnahtar() {
-    d.m = "0000";
     const ac = !ISIKLAR.some(acikMi);
-    Object.assign(d, ac ? { led1: 1, led2: 1, rgb1: "beyaz", rgb2: "beyaz" } : { led1: 0, led2: 0, rgb1: "kapali", rgb2: "kapali" });
+    Object.assign(d, ac ? { led1: 1, led2: 1, rgb1: modNo("rgb1") ? rgbAc("rgb1") : "beyaz", rgb2: modNo("rgb2") ? rgbAc("rgb2") : "beyaz" } : { led1: 0, led2: 0, rgb1: "kapali", rgb2: "kapali" });
     gonder(ac ? "/hepsi/ac" : "/hepsi/kapat");
     ciz();
   }
